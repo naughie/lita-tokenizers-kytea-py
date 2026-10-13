@@ -54,6 +54,27 @@ def main():
     output.flush()
 ```
 
+The format of models can be text-based (trained with the `-modtext` option):
+
+```python
+from lita_tokenizers_kytea_py import KyTea, StringStream
+
+
+def main():
+    model = KyTea()
+    model.read_model("/path/to/model.txt")
+
+    input = StringStream("すもももももももものうち")
+    output = StringStream()
+
+    model.tokenize(input, output)
+    print(output.as_str())
+
+
+if __name__ == "__main__":
+    main()
+```
+
 Also, the model itself can be loaded before calling `read_model()`:
 
 ```python
