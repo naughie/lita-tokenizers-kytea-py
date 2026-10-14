@@ -1,6 +1,6 @@
 [package]
 name = "lita-tokenizers-kytea-py"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Masato Nakata <masaton@naughie.com>"]
 license = "MIT OR Apache-2.0"
@@ -11,8 +11,12 @@ homepage = "https://github.com/naughie/lita-tokenizers-kytea-py"
 name = "lita_tokenizers_kytea_py"
 crate-type = ["cdylib"]
 
+[profile.release]
+lto = true
+strip = "symbols"
+codegen-units = 1
+
 [dependencies]
 pyo3 = "0.29"
 
-kytea-sys = "0.2.4"
-tokenizers-core = { package = "lita-tokenizers-core", version = "0.1.0" }
+kytea-sys = "0.2.5"

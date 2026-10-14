@@ -94,3 +94,29 @@ def main():
     model.tokenize(input, output)
     print(output.as_str())
 ```
+
+### Configs
+
+You can pass the KyTea's config parameters to the constructor:
+
+```python
+model = KyTea(
+    debug="silent",
+    input_format="raw",
+    word_bound=" ",
+    tag_bound="/",
+    elem_bound="&",
+    unk_bound=" ",
+    no_bound="-",
+    has_bound="|",
+    skip_bound="?",
+    escape="\\",
+)
+```
+
+The default values of `*_bound` and `escape` are described [here](https://docs.rs/kytea-sys/0.2.5/kytea_sys/ffi/defaults/index.html).
+
+The parameter `debug` represents the log level on the FFI side: `"silent"` (*default*), `"simple"`, `"detailed"`, and `"full"`.
+
+The list of the accepted values of `input_format` is: `"raw"` (*default*), `"full"`, `"part"`, `"tok"`, `"eda"`, and `"tags"`.
+See the documentation of KyTea for detailed information.

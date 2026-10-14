@@ -3,31 +3,145 @@ mod lita_tokenizers_kytea_py {
     use pyo3::exceptions as pyerr;
     use pyo3::prelude::*;
 
-    use kytea_sys::ModelFormat;
-    use tokenizers_core::delim;
+    use kytea_sys::{CorpusFormat, DebugLevel, ModelFormat};
 
-    use std::ffi::CString;
+    use std::ffi::{CStr, CString};
 
     #[pyclass(unsendable)]
-    struct KyTea(kytea_sys::KyTea);
+    struct KyTea {
+        // `ffi` must be dropped first
+        ffi: kytea_sys::KyTea,
+        _cptrs: OwnedCPtrs,
+    }
+
+    struct OwnedCPtr(Option<Box<CStr>>);
+
+    impl OwnedCPtr {
+        fn new(c: Option<char>) -> Self {
+            let Some(c) = c else {
+                return Self(None);
+            };
+            if c == '\0' {
+                return Self(None);
+            }
+
+            let mut buf = [0u8; 4];
+            let encoded = c.encode_utf8(&mut buf);
+
+            let encoded_len = encoded.len();
+
+            let mut inner = Vec::with_capacity(encoded_len + 1);
+            inner[..encoded_len].copy_from_slice(encoded.as_bytes());
+            inner[encoded_len] = 0;
+
+            // SAFETY: `c != '\0'` guarantees that `encoded` contains no 0u8
+            let inner = unsafe { CString::from_vec_with_nul_unchecked(inner) };
+            Self(Some(inner.into_boxed_c_str()))
+        }
+
+        fn as_cstr(&self) -> Option<&CStr> {
+            self.0.as_deref()
+        }
+    }
+
+    struct OwnedCPtrs {
+        word_bound: OwnedCPtr,
+        tag_bound: OwnedCPtr,
+        elem_bound: OwnedCPtr,
+        unk_bound: OwnedCPtr,
+        no_bound: OwnedCPtr,
+        has_bound: OwnedCPtr,
+        skip_bound: OwnedCPtr,
+        escape: OwnedCPtr,
+    }
 
     #[pymethods]
     impl KyTea {
         #[new]
-        pub fn new() -> Self {
-            use kytea_sys::{CorpusFormat, DebugLevel};
+        #[pyo3(signature = (
+            debug="silent", input_format="raw",
+            word_bound=None, tag_bound=None, elem_bound=None,
+            unk_bound=None, no_bound=None, has_bound=None, skip_bound=None,
+            escape=None,
+        ))]
+        #[allow(clippy::too_many_arguments)]
+        pub fn new(
+            debug: Option<&str>,
+            input_format: Option<&str>,
+            word_bound: Option<char>,
+            tag_bound: Option<char>,
+            elem_bound: Option<char>,
+            unk_bound: Option<char>,
+            no_bound: Option<char>,
+            has_bound: Option<char>,
+            skip_bound: Option<char>,
+            escape: Option<char>,
+        ) -> Self {
+            let debug = match debug {
+                Some("silent") => DebugLevel::Silent,
+                Some("simple") => DebugLevel::Simple,
+                Some("detailed") => DebugLevel::Detailed,
+                Some("full") => DebugLevel::Full,
+                _ => DebugLevel::Silent,
+            };
+            let input_format = match input_format {
+                Some("raw") => CorpusFormat::Raw,
+                Some("full") => CorpusFormat::Full,
+                Some("part") => CorpusFormat::Part,
+                Some("prob") => CorpusFormat::Prob,
+                Some("tok") => CorpusFormat::Tok,
+                Some("eda") => CorpusFormat::Eda,
+                Some("tags") => CorpusFormat::Tags,
+                _ => CorpusFormat::Raw,
+            };
+
+            let ptrs = OwnedCPtrs {
+                word_bound: OwnedCPtr::new(word_bound),
+                tag_bound: OwnedCPtr::new(tag_bound),
+                elem_bound: OwnedCPtr::new(elem_bound),
+                unk_bound: OwnedCPtr::new(unk_bound),
+                no_bound: OwnedCPtr::new(no_bound),
+                has_bound: OwnedCPtr::new(has_bound),
+                skip_bound: OwnedCPtr::new(skip_bound),
+                escape: OwnedCPtr::new(escape),
+            };
 
             let mut ffi = kytea_sys::KyTea::new();
-            ffi.config()
-                .set_debug(DebugLevel::Silent)
+            let mut config = ffi.config();
+            config
+                .set_debug(debug)
                 .set_training(false)
-                .set_input_format(CorpusFormat::Raw)
-                .set_word_bound(delim::TOKEN_CSTR)
-                .set_tag_bound(delim::TAG_CSTR)
-                .set_elem_bound(delim::TOKEN_CSTR)
-                .set_escape(delim::ESCAPE_CSTR);
+                .set_input_format(input_format);
 
-            Self(ffi)
+            // SAFETY: the signature of `KyTea` guarantees that `ptrs` outlives the FFI model.
+            unsafe {
+                if let Some(ptr) = ptrs.word_bound.as_cstr() {
+                    config.set_word_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.tag_bound.as_cstr() {
+                    config.set_tag_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.elem_bound.as_cstr() {
+                    config.set_elem_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.unk_bound.as_cstr() {
+                    config.set_unk_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.no_bound.as_cstr() {
+                    config.set_no_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.has_bound.as_cstr() {
+                    config.set_has_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.skip_bound.as_cstr() {
+                    config.set_skip_bound_unchecked(ptr);
+                }
+                if let Some(ptr) = ptrs.escape.as_cstr() {
+                    config.set_escape_unchecked(ptr);
+                }
+            }
+
+            Self { ffi, _cptrs: ptrs }
         }
 
         pub fn read_model(&mut self, path: &str) -> PyResult<()> {
@@ -37,7 +151,7 @@ mod lita_tokenizers_kytea_py {
                 ));
             };
 
-            self.0.read_model(&model_c, ModelFormat::Unknown)?;
+            self.ffi.read_model(&model_c, ModelFormat::Unknown)?;
 
             Ok(())
         }
@@ -56,7 +170,7 @@ mod lita_tokenizers_kytea_py {
             };
 
             let mut stream = IspanStream::new(bytes);
-            self.0.read_model_from_stream(&mut stream, format)?;
+            self.ffi.read_model_from_stream(&mut stream, format)?;
 
             Ok(())
         }
@@ -100,7 +214,7 @@ mod lita_tokenizers_kytea_py {
             };
 
             let mut ctx = self
-                .0
+                .ffi
                 .context(&mut input_stream, &mut output_stream)
                 .map_err(|e| {
                     PyErr::new::<pyerr::PyRuntimeError, _>(format!(
