@@ -225,6 +225,11 @@ mod lita_tokenizers_kytea_py {
 
             Ok(())
         }
+
+        #[staticmethod]
+        pub fn version() -> &'static str {
+            kytea_sys::version()
+        }
     }
 
     #[pyclass(subclass, unsendable)]

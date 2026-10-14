@@ -5,6 +5,7 @@ __pycache__/
 *.dylib
 
 .venv/
+.wheel-venv/
 
 *.egg-info/
 .eggs/

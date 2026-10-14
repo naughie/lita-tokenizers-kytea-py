@@ -1,6 +1,6 @@
 [package]
 name = "lita-tokenizers-kytea-py"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Masato Nakata <masaton@naughie.com>"]
 license = "MIT OR Apache-2.0"
@@ -19,4 +19,4 @@ codegen-units = 1
 [dependencies]
 pyo3 = "0.29"
 
-kytea-sys = "0.2.5"
+kytea-sys = "0.2.6"

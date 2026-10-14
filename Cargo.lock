@@ -55,9 +55,9 @@ dependencies = [
 
 [[package]]
 name = "kytea-sys"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12352a8e30c0da6f5ebe0b3260d42a04521542e1f1bf17610c929edec1f4d1f8"
+checksum = "59b26705363dd1d492f271606ef539874d2c43703f0e24be54fabd3145700dd0"
 dependencies = [
  "cc",
 ]
@@ -70,7 +70,7 @@ checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
 
 [[package]]
 name = "lita-tokenizers-kytea-py"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "kytea-sys",
  "pyo3",

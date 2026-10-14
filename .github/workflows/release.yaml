@@ -62,6 +62,20 @@ jobs:
             --out dist
             --interpreter /opt/python/${{ matrix.python }}/bin/python
 
+      - name: Test installed Linux wheel
+        env:
+          TEST_IMAGE: ${{ matrix.platform.image }}
+          TEST_PYTHON: /opt/python/${{ matrix.python }}/bin/python
+        run: |
+          docker run --rm \
+            --volume "$PWD/dist:/dist:ro" \
+            --volume "$PWD/tests:/tests:ro" \
+            --env TEST_PYTHON \
+            "$TEST_IMAGE" sh -eu -c '
+              "$TEST_PYTHON" -m pip install --no-index /dist/*.whl
+              "$TEST_PYTHON" -I -m unittest discover -s /tests -v
+            '
+
       - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.platform.target }}-${{ matrix.python }}
@@ -105,6 +119,14 @@ jobs:
             --locked
             --out dist
             --interpreter python
+
+      - uses: astral-sh/setup-uv@v9
+
+      - name: Test installed macOS wheel
+        run: |
+          uv venv --python python .wheel-venv
+          uv pip install --python .wheel-venv/bin/python --no-index dist/*.whl
+          .wheel-venv/bin/python -I -m unittest discover -s tests -v
 
       - uses: actions/upload-artifact@v7
         with:
