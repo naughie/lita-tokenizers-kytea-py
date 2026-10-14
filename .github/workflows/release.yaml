@@ -124,7 +124,7 @@ jobs:
 
       - name: Test installed macOS wheel
         run: |
-          uv venv --python python .wheel-venv
+          uv venv --python "$pythonLocation/bin/python" .wheel-venv
           uv pip install --python .wheel-venv/bin/python --no-index dist/*.whl
           .wheel-venv/bin/python -I -m unittest discover -s tests -v
 
